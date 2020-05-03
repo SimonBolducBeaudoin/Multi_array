@@ -2,23 +2,14 @@
 
 // see : https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-malloc?view=vs-2019
 // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
-void* _128bit_aligned_malloc( size_t size )
+void* _64B_aligned_malloc( size_t size )
 {
 	void    *ptr;
-    size_t  alignment = 16 ;
+    size_t  alignment = 64 ;
 	
 	ptr = _aligned_malloc(size, alignment);
     if (ptr == NULL) {throw std::runtime_error("Error allocation aligned memory.");}
 	
-    /* 
-	if (((unsigned long long)ptr % alignment ) == 0)
-        printf_s( "This pointer, %p, is aligned on %zu\n",
-                  ptr, alignment);
-    else
-        printf_s( "This pointer, %p, is not aligned on %zu\n",
-                  ptr, alignment); 
-	*/
-	// printf("_128bit_aligned_malloc");
 	return ptr ;
 };
 
@@ -48,7 +39,8 @@ Multi_array<Type,1,IndexType>::Multi_array
 	ptr( (Type*)alloc_func(n_i*stride_i) ),
 	n_i(n_i),
 	stride_i(stride_i)
-{};
+{
+};
 
 /* constructor no strides */
 template<class Type, class IndexType>
@@ -78,7 +70,7 @@ Multi_array<Type,1,IndexType>::Multi_array( Type* ptr , IndexType n_i , size_t s
 {};
 
 template<class Type, class IndexType>
-Multi_array<Type,1,IndexType> Multi_array<Type,1,IndexType>::numpy( py::array_t<Type, py::array::c_style> np_array )
+Multi_array<Type,1,IndexType> Multi_array<Type,1,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	
@@ -406,7 +398,7 @@ Multi_array<Type,2,IndexType>::Multi_array
 {};
 /* Constructing from a 2D Numpy array */
 template<class Type, class IndexType>
-Multi_array<Type,2,IndexType> Multi_array<Type,2,IndexType>::numpy( py::array_t<Type, py::array::c_style> np_array )
+Multi_array<Type,2,IndexType> Multi_array<Type,2,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	
@@ -741,7 +733,7 @@ Multi_array<Type,3,IndexType>::Multi_array
 {};
 
 template<class Type, class IndexType>
-Multi_array<Type,3,IndexType> Multi_array<Type,3,IndexType>::numpy( py::array_t<Type, py::array::c_style> np_array )
+Multi_array<Type,3,IndexType> Multi_array<Type,3,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	

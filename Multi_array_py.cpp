@@ -4,10 +4,14 @@
 #define PY_MULTI_ARRAY(Type,Dim)\
 	py::class_<Multi_array<Type,Dim>>( m , "Multi_array_"#Type"_"#Dim)\
 	.def( py::init(&Multi_array<Type,Dim>::numpy), "numpy_array"_a.noconvert() ) \
-	.def("get_copy", &Multi_array<Type,Dim>::get_py_copy )\
-	.def("get", &Multi_array<Type,Dim>::get_py_no_copy )\
+	.def("get_copy", 	( py::array_t<int8_t,py::array::c_style> (Multi_array<Type,Dim>::*)()) &Multi_array<Type,Dim>::copy_py )\
+	.def("get", 		( py::array_t<int8_t,py::array::c_style> (Multi_array<Type,Dim>::*)()) &Multi_array<Type,Dim>::move_py )\
 	;
-
+	// py::array_t<Type, py::array::c_style> copy_py();
+	
+	// (np_double (*)(np_double&,np_double&) ) &interpolation_linear_py 
+	
+	// m.def("lin_interpol_1D", , "data"_a.noconvert() , "new_abs"_a.noconvert() ) ;
 /* void omp_test()
 {
 	int n_threads = 2 ;

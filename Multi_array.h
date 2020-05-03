@@ -7,11 +7,11 @@
 #include <pybind11/complex.h>
 #include <pybind11/numpy.h>
 
-namespace py = pybind11;
-using namespace pybind11::literals;
-typedef std::complex<float> complex_f;
-typedef std::complex<double> complex_d;
-typedef unsigned int uint;
+namespace py = pybind11 ;
+using namespace pybind11::literals ;
+typedef std::complex<float> complex_f ;
+typedef std::complex<double> complex_d ;
+typedef unsigned int uint ;
 
 /*Function pointer types*/
 // typedef void* (*alloc_ptr)(size_t size);
@@ -19,7 +19,7 @@ typedef unsigned int uint;
 
 // see : https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-malloc?view=vs-2019
 // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
-void* _128bit_aligned_malloc( size_t size );
+void* _64B_aligned_malloc( size_t size );
 
 /////// IDEA
 	// Add a macro that can be turned on and off that checks if called indexes are out of bounds.
@@ -89,7 +89,7 @@ class Multi_array<Type,1,IndexType>
 	Multi_array 
 	(
 		IndexType n_i , // Number of elements in i
-		void* (*alloc_func)(size_t size) = &_128bit_aligned_malloc, // Custom allocation function 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, // Custom allocation function 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
 	
@@ -98,7 +98,7 @@ class Multi_array<Type,1,IndexType>
 	(
 		IndexType n_i , // Number of elements in i
 		size_t stride_i , // The number of Bytes of one element 
-		void* (*alloc_func)(size_t size) = &_128bit_aligned_malloc, // Custom allocation function 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, // Custom allocation function 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
 	
@@ -106,16 +106,16 @@ class Multi_array<Type,1,IndexType>
 	Multi_array ( Type* prt, IndexType n_i , size_t stride_i = sizeof(Type) );
 	
 	/* Constructing from a 1D Numpy array */
-	static Multi_array numpy( py::array_t<Type,py::array::c_style> np_array );
+	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
 	
 	/* Copy constructor */
-	Multi_array( Multi_array& Mom );
+	Multi_array( Multi_array& Mom );  
 	Multi_array( const Multi_array& Mom );
-	
+		
 	/* Move constructor */
 	// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2006/n2027.html#Move_Semantics
 	// https://en.cppreference.com/w/cpp/language/move_constructor
-	Multi_array( Multi_array&& Mom );
+	Multi_array( Multi_array&& Mom ); 
 	
 	/* Destructor */
 	~Multi_array();
@@ -152,7 +152,7 @@ class Multi_array<Type,1,IndexType>
 		move_py : 
 		Same meaning as move constructor.
 		"steal" the resources held by the current object and gives them to a numpy array 
-		and leave the current object in valid but empty state sate.
+		and leave the current object in valid but empty state.
 		Python inherits all memory responsibilities 
 	*/
 	py::array_t<Type, py::array::c_style> move_py();
@@ -206,7 +206,7 @@ class Multi_array<Type,2,IndexType>
 	( 
 		IndexType n_j , 
 		IndexType n_i , 
-		void* (*alloc_func)(size_t size) = &_128bit_aligned_malloc,
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc,
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
 	/* declaring strides */
@@ -216,7 +216,7 @@ class Multi_array<Type,2,IndexType>
 		IndexType n_i , 
 		size_t stride_j , 
 		size_t stride_i = sizeof(Type) ,
-		void* (*alloc_func)(size_t size) = &_128bit_aligned_malloc, 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
 	
@@ -238,7 +238,7 @@ class Multi_array<Type,2,IndexType>
 	);
 	
 	/* Constructing from a 2D Numpy array */
-	static Multi_array numpy( py::array_t<Type,py::array::c_style> np_array );
+	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
 	
 	/* Copy constructors */
 	Multi_array( Multi_array& Mom ) ;
@@ -275,8 +275,13 @@ class Multi_array<Type,2,IndexType>
 	
 	IndexType get_n_j(){return n_j;};
 	IndexType get_n_i(){return n_i;};
+	IndexType get_n_j()const{return n_j;};
+	IndexType get_n_i()const{return n_i;};
+	
 	size_t get_stride_j(){return stride_j;};
 	size_t get_stride_i(){return stride_i;};
+	size_t get_stride_j()const{return stride_j;};
+	size_t get_stride_i()const{return stride_i;};
 	
 	private :
 	void* (*alloc_func)(size_t size) ;
@@ -305,7 +310,7 @@ class Multi_array<Type,3,IndexType>
 		IndexType n_k , // Number of elements in k
 		IndexType n_j , // Number of elements in j
 		IndexType n_i , // Number of elements in i
-		void* (*alloc_func)(size_t size) = &_128bit_aligned_malloc, // Custom allocation function 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, // Custom allocation function 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
 	/* declaring strides */
@@ -317,7 +322,7 @@ class Multi_array<Type,3,IndexType>
 		size_t stride_k , // The number of Bytes of n_i*n_j elements
 		size_t stride_j , // The number of Bytes of a complete row of elements
 		size_t stride_i = sizeof(Type) , // The number of Bytes of one element
-		void* (*alloc_func)(size_t size) = &_128bit_aligned_malloc, // Custom allocation function 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, // Custom allocation function 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
 	
@@ -336,7 +341,7 @@ class Multi_array<Type,3,IndexType>
 	);
 	
 	/* Constructing from a 3D Numpy array */
-	static Multi_array numpy( py::array_t<Type,py::array::c_style> np_array );
+	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
 	
 	/* Copy constructor */
 	Multi_array( Multi_array& Mom);
@@ -372,9 +377,19 @@ class Multi_array<Type,3,IndexType>
 	py::array_t<Type, py::array::c_style> affect_py();
 	py::array_t<Type, py::array::c_style> affect_py(IndexType n_k,IndexType n_j,IndexType n_i);
 	
-	IndexType get_n_i(){return n_i;};
-	IndexType get_n_j(){return n_j;};
 	IndexType get_n_k(){return n_k;};
+	IndexType get_n_j(){return n_j;};
+	IndexType get_n_i(){return n_i;};
+	IndexType get_n_k()const{return n_k;};
+	IndexType get_n_j()const{return n_j;};
+	IndexType get_n_i()const{return n_i;};
+
+	size_t get_stride_k(){return stride_k;};
+	size_t get_stride_j(){return stride_j;};
+	size_t get_stride_i(){return stride_i;};
+	size_t get_stride_k()const{return stride_k;};
+	size_t get_stride_j()const{return stride_j;};
+	size_t get_stride_i()const{return stride_i;};
 	
 	private :
 	void* (*alloc_func)(size_t size) ;
