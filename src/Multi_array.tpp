@@ -1,11 +1,10 @@
-#include "Multi_array.h"
+#pragma once
 
-// see : https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-malloc?view=vs-2019
-// https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+template <size_t alignment= 64>
 void* _64B_aligned_malloc( size_t size )
 {
 	void    *ptr;
-    size_t  alignment = 64 ;
+    // size_t  alignment = 64 ;
 	
 	ptr = _aligned_malloc(size, alignment);
     if (ptr == NULL) {throw std::runtime_error("Error allocation aligned memory.");}

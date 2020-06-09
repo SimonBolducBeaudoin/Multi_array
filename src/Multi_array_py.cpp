@@ -1,4 +1,4 @@
-#include "Multi_array_py.h"
+#include <Multi_array_py.h>
 
 // CLASS MACROS
 #define PY_MULTI_ARRAY(Type,Dim)\

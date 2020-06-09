@@ -1,8 +1,6 @@
 #pragma once
 #include<malloc.h>
 
-// #include <fftw3.h>
-
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>
 #include <pybind11/numpy.h>
@@ -19,6 +17,7 @@ typedef unsigned int uint ;
 
 // see : https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-malloc?view=vs-2019
 // https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
+template <size_t alignment= 64>
 void* _64B_aligned_malloc( size_t size );
 
 /////// IDEA
@@ -410,3 +409,4 @@ class Multi_array<Type,3,IndexType>
 	void _free_func();
 };
 
+#include "../src/Multi_array.tpp"

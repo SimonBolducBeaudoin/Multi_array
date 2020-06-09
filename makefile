@@ -1,69 +1,123 @@
-# Toolchain, using mingw on windows
-CC = $(OS:Windows_NT=x86_64-w64-mingw32-)g++
-PKG_CFG = $(OS:Windows_NT=x86_64-w64-mingw32-)pkg-config
-
-TARGET_NAME = Multi_array
-TARGET_STATIC = $(TARGET_NAME).a
+NAME = Multi_array
 PYLIB_EXT = $(if $(filter $(OS),Windows_NT),.pyd,.so)
-TARGET_PYLIB = ../Python/$(TARGET_NAME)$(PYLIB_EXT)
+TARGET_STATIC = lib$(NAME).a
+TARGET_PYLIB = ../Python/$(NAME)$(PYLIB_EXT)
 
-SRC  = $(wildcard *.cpp)
-OBJ  = $(patsubst %.cpp, %.o, $(SRC))
+MULTI_ARRAY = ../Multi_array
+OMP_EXTRA = ../Omp_extra
+INTERPOLATION = ../Interpolation
+LIBS = ../libs
+
+IDIR = includes
+ODIR = obj
+LDIR = lib
+SDIR = src
+
+EXTERNAL_INCLUDES = -I$(MULTI_ARRAY)/$(IDIR)
+
+SRC  = $(wildcard $(SDIR)/*.cpp)
+OBJ  = $(patsubst $(SDIR)/%.cpp,$(ODIR)/%.o,$(SRC))
 DEPS = $(OBJ:.o=.d)
 
-# All the external objects that the current submodule depends on
-# Those objects have to be up to date
-tempo1 = $(wildcard ../SM-Numerical_integration/*.a)
-EXTERNAL_OBJ = $(tempo1)
+CXX = $(OS:Windows_NT=x86_64-w64-mingw32-)g++
+OPTIMIZATION = -Ofast -march=native
+CPP_STD = -std=c++14
+WARNINGS = -Wall
+MINGW_COMPATIBLE = $(OS:Windows_NT=-DMS_WIN64 -D_hypot=hypot)
+DEPS_FLAG = -MMD -MP
 
-# flags
-CFLAGS = -Ofast -march=native -MMD -MP -Wall $(OS:Windows_NT=-DMS_WIN64 -D_hypot=hypot)
-SHRFLAGS = -fPIC -shared
-OMPFLAGS = -fopenmp -fopenmp-simd
-MATHFLAGS = -lm
+POSITION_INDEP = -fPIC
+SHARED = -shared
 
-# Python directories
 PY = $(OS:Windows_NT=/c/Anaconda2/)python
-ifeq ($(USERNAME),simon)
-    PY = $(OS:Windows_NT=/cygdrive/c/Anaconda2/)python
-endif
-ifeq ($(USERNAME),Sous-sol)
-    PY = $(OS:Windows_NT=/cygdrive/c/ProgramData/Anaconda2/)python
-endif
 
-# includes
-PYINCL := $(shell $(PY) -m pybind11 --includes)
+PY_INCL := $(shell $(PY) -m pybind11 --includes)
 ifneq ($(OS),Windows_NT)
-    PYINCL += -I /usr/include/python2.7/
+    PY_INCL += -I /usr/include/python2.7/
 endif
 
-# libraries
-LDLIBS = $(OS:Windows_NT=-L /c/Anaconda2/libs/ -l python27) $(PYINCL)
-ifeq ($(USERNAME),simon)
-    LDLIBS = $(OS:Windows_NT=-L /cygdrive/c/Anaconda2/libs/ -l python27) $(PYINCL)
-endif
-ifeq ($(USERNAME),Sous-sol)
-    LDLIBS = $(OS:Windows_NT=-L /cygdrive/c/ProgramData/Anaconda2/libs/ -l python27) $(PYINCL) 
-endif
+PY_LINKS = $(OS:Windows_NT=-L /c/Anaconda2/ -l python27)
+
+LINKS = $(PY_LINKS)
+
+LINKING = 	$(CXX) $(OPTIMIZATION) \
+			$(POSITION_INDEP) $(SHARED) \
+			-o $(TARGET_PYLIB) $(OBJ) \
+			$(LINKS) \
+			$(DEPS_FLAG) $(MINGW_COMPATIBLE)
+			
+STATIC_LIB = ar cr $(TARGET_STATIC) $(OBJ) 
+
+INCLUDES = 	$(PY_INCL) \
+			$(EXTERNAL_INCLUDES)
+			
+COMPILE = $(CXX) $(CPP_STD) $(OPTIMIZATION) $(POSITION_INDEP) $(WARNINGS) -c -o $@ $< $(INCLUDES) $(DEPS_FLAG) $(MINGW_COMPATIBLE)
+
+LINK_BENCHMARK = -L$(LIBS)/benchmark/build/src -lbenchmark -lpthread -lshlwapi
+
+LINKING_BENCHMARK = \
+	$(CXX) $< -O0 -march=native \
+	-static \
+	$(LINK_BENCHMARK)\
+	$(DEPS_FLAG) $(MINGW_COMPATIBLE) \
+	-o $@ 
+
+INCLUDES_BENCHMARK = \
+	-I $(LIBS)/benchmark/include \
+	$(INCLUDES)
+			
+COMPILE_BENCHMARK = \
+	$(CXX) $(CPP_STD) $< -O0 -march=native \
+	$(INCLUDES_BENCHMARK) \
+	$(DEPS_FLAG) $(MINGW_COMPATIBLE) \
+	-c -o $@ 
+
+message :
+	@ echo "Multi_array is now a header only library"
+
+all : $(TARGET_PYLIB) $(TARGET_STATIC) $(OBJ)
+	@ echo "Complied explicit template instantiation"
+
+python_debug_library : $(TARGET_PYLIB)
+	@ echo "Complied explicit template instantiation"
+	@ echo "And python debuging code"
+
+static_library : $(TARGET_STATIC)
+	@ echo "Complied explicit template instantiation"
+	@ echo "And python debuging code"
+	
+compile_objects : $(OBJ)
+
+benchmark : benchmark.exe
 
 $(TARGET_PYLIB): $(OBJ)
 	@ echo " "
-	@ echo "---------Compile library $(TARGET_PYLIB)---------"
-	$(CC) $(SHRFLAGS) -o $(TARGET_PYLIB) $(OBJ) $(EXTERNAL_OBJ) $(CFLAGS) $(MATHFLAGS) $(OMPFLAGS) $(LDLIBS)
-
-$(TARGET_STATIC) : $(OBJ)
+	@ echo "---------Linking library $(TARGET_PYLIB)---------"
+	$(LINKING)
+	
+$(TARGET_STATIC): $(OBJ)
 	@ echo " "
 	@ echo "---------Compiling static library $(TARGET_STATIC)---------"
-	ar cr $(TARGET_STATIC) $(OBJ) $(EXTERNAL_OBJ) 
+	$(STATIC_LIB)
+	
+benchmark.exe : benchmark.o
+	@ echo " "
+	@ echo "---------Compile $@ ---------"
+	$(LINKING_BENCHMARK)
 
-%.o : %.cpp
+benchmark.o : benchmark.cpp
+	@ echo " "
+	@ echo "---------Compile $@ from $< ---------"
+	$(COMPILE_BENCHMARK)
+
+$(ODIR)/%.o : $(SDIR)/%.cpp
 	@ echo " "
 	@ echo "---------Compile object $@ from $<--------"
-	$(CC) $(SHRFLAGS) -c -Wall -o $@ $< $(CFLAGS) $(MATHFLAGS) $(OMPFLAGS) $(LDLIBS)
-
+	$(COMPILE)
+	
 -include $(DEPS)
 
 clean:
-	@rm -f $(TARGET_STATIC) $(TARGET_PYLIB) $(OBJ)
-
-.PHONY: all clean force 
+	@rm -f $(TARGET_PYLIB) $(TARGET_STATIC) $(OBJ) $(DEPS) benchmark.o benchmark.exe
+ 
+.PHONY: all , clean , message , python_debug_library , compile_objects , benchmark
