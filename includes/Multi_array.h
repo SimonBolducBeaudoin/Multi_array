@@ -22,6 +22,8 @@ void* _64B_aligned_malloc( size_t size );
 
 /////// IDEA
 	// Add a macro that can be turned on and off that checks if called indexes are out of bounds.
+	// Add a case for move_py , copy_py , ... that manages the case where the size in python must be different 
+	// 	and the pointer as to be translated for some value
 
 /*
 Multi_array is a custom class for runtime allocation of fixed size multidimentionnal (but low dimensionnal) arrays.
@@ -105,6 +107,7 @@ class Multi_array<Type,1,IndexType>
 	Multi_array ( Type* prt, IndexType n_i , size_t stride_i = sizeof(Type) );
 	
 	/* Constructing from a 1D Numpy array */
+    // Shares memory with np_array
 	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
 	
 	/* Copy constructor */
@@ -175,6 +178,8 @@ class Multi_array<Type,1,IndexType>
     
 	size_t get_stride_i(){return stride_i;};
 	size_t get_stride_i()const{return stride_i;};
+	
+	uint64_t get_alloc_memory_size(){return n_i*sizeof(Type);}; /*This does not take strides into account...*/
 	
 	// alloc_ptr get_alloc_func(){return alloc_func;};
 	// free_ptr get_free_func(){return free_func};
@@ -282,6 +287,8 @@ class Multi_array<Type,2,IndexType>
 	size_t get_stride_j()const{return stride_j;};
 	size_t get_stride_i()const{return stride_i;};
 	
+	uint64_t get_alloc_memory_size(){return n_j*n_i*sizeof(Type);};
+	
 	private :
 	void* (*alloc_func)(size_t size) ;
 	void (*free_func)(void* ptr) ;
@@ -303,53 +310,43 @@ template<class Type, class IndexType>
 class Multi_array<Type,3,IndexType>
 {
 	public :
-	/* with default strides */
 	Multi_array 
 	( 
-		IndexType n_k , // Number of elements in k
-		IndexType n_j , // Number of elements in j
-		IndexType n_i , // Number of elements in i
-		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, // Custom allocation function 
+		IndexType n_k , 
+		IndexType n_j , 
+		IndexType n_i , 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc,
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
-	/* declaring strides */
 	Multi_array
 	( 
-		IndexType n_k , // Number of elements in k
-		IndexType n_j , // Number of elements in j
-		IndexType n_i , // Number of elements in i
-		size_t stride_k , // The number of Bytes of n_i*n_j elements
-		size_t stride_j , // The number of Bytes of a complete row of elements
-		size_t stride_i = sizeof(Type) , // The number of Bytes of one element
-		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, // Custom allocation function 
+		IndexType 	n_k ,
+		IndexType 	n_j , 
+		IndexType 	n_i ,
+		size_t 		stride_k , 
+		size_t 		stride_j , 
+		size_t 		stride_i = sizeof(Type) , 
+		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
-	
-	/* 	Constructing from an existing pointer with default strides */
 	Multi_array ( Type* prt, IndexType n_k , IndexType n_j , IndexType n_i );
-	/* 	Constructing from an existing pointer declaring strides */
 	Multi_array 
 	(
 		Type* prt ,
 		IndexType n_k ,
 		IndexType n_j ,
 		IndexType n_i ,
-		size_t stride_k , // The number of Bytes of n_i*n_j elements
-		size_t stride_j , // The number of Bytes of complete row of elements
-		size_t stride_i = sizeof(Type) // The number of Bytes of one element
+		size_t stride_k , 
+		size_t stride_j , 
+		size_t stride_i = sizeof(Type) 
 	);
-	
-	/* Constructing from a 3D Numpy array */
 	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
 	
-	/* Copy constructor */
 	Multi_array( Multi_array& Mom);
 	Multi_array(const Multi_array& Mom);
 	
-	/* Move constructor */
 	Multi_array( Multi_array&& Mom );
 	
-	/* Destructor */
 	~Multi_array();
 	
 	Type& operator()( IndexType k , IndexType j , IndexType i ); /* Returns a reference to an element */
@@ -357,7 +354,6 @@ class Multi_array<Type,3,IndexType>
 	Type* operator()( IndexType k ) ; /* Returns a pointer to the k'th 2D subarray */ 
 	Type* operator[]( IndexType k ) ; /* Returns a pointer to the k'th 2D subarray */ 
 	
-	/* Same behavior for const Multi_array	*/
 	Type& operator()( IndexType k , IndexType j , IndexType i ) const ; /* Returns a reference to an element */
 	Type* operator()( IndexType k , IndexType j  ) const ; /* Returns a pointer to kj'th row */
 	Type* operator()( IndexType k ) const ; /* Returns a pointer to the k'th 2D subarray */ 
@@ -366,7 +362,6 @@ class Multi_array<Type,3,IndexType>
 	Type* get_ptr(){ return ptr; } ;
 	Type* get_ptr()const{ return ptr; }  ;
 	
-	/* Copy to numpy methods */
 	py::array_t<Type, py::array::c_style> move_py();
 	py::array_t<Type, py::array::c_style> move_py(IndexType n_k,IndexType n_j,IndexType n_i);
 	py::array_t<Type, py::array::c_style> copy_py();
@@ -376,23 +371,25 @@ class Multi_array<Type,3,IndexType>
 	py::array_t<Type, py::array::c_style> affect_py();
 	py::array_t<Type, py::array::c_style> affect_py(IndexType n_k,IndexType n_j,IndexType n_i);
 	
-	IndexType get_n_k(){return n_k;};
-	IndexType get_n_j(){return n_j;};
-	IndexType get_n_i(){return n_i;};
-	IndexType get_n_k()const{return n_k;};
-	IndexType get_n_j()const{return n_j;};
-	IndexType get_n_i()const{return n_i;};
+	IndexType 	get_n_k()		{return n_k;};
+	IndexType 	get_n_j()		{return n_j;};
+	IndexType 	get_n_i()		{return n_i;};
+	IndexType 	get_n_k()const	{return n_k;};
+	IndexType 	get_n_j()const	{return n_j;};
+	IndexType 	get_n_i()const	{return n_i;};
 
-	size_t get_stride_k(){return stride_k;};
-	size_t get_stride_j(){return stride_j;};
-	size_t get_stride_i(){return stride_i;};
-	size_t get_stride_k()const{return stride_k;};
-	size_t get_stride_j()const{return stride_j;};
-	size_t get_stride_i()const{return stride_i;};
+	size_t 		get_stride_k()		{return stride_k;};
+	size_t 		get_stride_j()		{return stride_j;};
+	size_t 		get_stride_i()		{return stride_i;};
+	size_t 		get_stride_k()const	{return stride_k;};
+	size_t 		get_stride_j()const	{return stride_j;};
+	size_t 		get_stride_i()const	{return stride_i;};
+	
+	uint64_t get_alloc_memory_size(){return n_j*n_i*sizeof(Type);};
 	
 	private :
-	void* (*alloc_func)(size_t size) ;
-	void (*free_func)(void* ptr) ;
+	void* 	(*alloc_func)	(size_t size) ;
+	void 	(*free_func)	(void* ptr) ;
 	
 	Type* ptr ;
 	IndexType n_k ; 
@@ -408,5 +405,154 @@ class Multi_array<Type,3,IndexType>
 	
 	void _free_func();
 };
+//////////////////////////////////////////////////
+template<class Type, class IndexType>
+class Multi_array<Type,4,IndexType>
+{
+	public :
+	Multi_array 
+	( 
+		IndexType n_l , 
+		IndexType n_k , 
+		IndexType n_j , 
+		IndexType n_i , 
+		void* 	(*alloc_func)	(size_t size)	= &_64B_aligned_malloc,
+		void 	(*free_func)	(void* ptr)		= &_aligned_free
+	);
+	Multi_array
+	( 
+		IndexType 	n_l , 
+		IndexType 	n_k , 
+		IndexType 	n_j , 
+		IndexType 	n_i , 
+		size_t 		stride_l , 
+		size_t 		stride_k , 
+		size_t 		stride_j , 
+		size_t 		stride_i = sizeof(Type) ,
+		void* (*alloc_func)(size_t size) 	= &_64B_aligned_malloc,
+		void  (*free_func) (void* ptr) 		= &_aligned_free
+	);
+	Multi_array ( Type* prt, IndexType n_l , IndexType n_k , IndexType n_j , IndexType n_i );
+	Multi_array 
+	(
+		Type* 		prt ,
+		IndexType 	n_l ,
+		IndexType 	n_k ,
+		IndexType 	n_j ,
+		IndexType 	n_i ,
+		size_t 		stride_l ,
+		size_t 		stride_k ,
+		size_t 		stride_j , 
+		size_t 		stride_i = sizeof(Type) 
+	);
+	
+	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
+	
+	Multi_array( Multi_array& Mom);
+	Multi_array(const Multi_array& Mom);
+	
+	Multi_array( Multi_array&& Mom );
+	
+	~Multi_array();
+	
+	Type& operator()( IndexType l , IndexType k , IndexType j , IndexType i ); /* Returns a reference to an element */
+	Type* operator()( IndexType l , IndexType k , IndexType j ); /* Returns a pointer to lkj'th row */
+	Type* operator()( IndexType l , IndexType k  ); /* Returns a pointer to lk'th 2D subarray */
+	Type* operator()( IndexType l ) ; /* Returns a pointer to the l'th 3D subarray */ 
+	Type* operator[]( IndexType l ) ; /* Returns a pointer to the l'th 3D subarray */ 
+	
+	/* Same behavior for const Multi_array	*/
+	Type& operator()( IndexType l , IndexType k , IndexType j , IndexType i )const ; /* Returns a reference to an element */
+	Type* operator()( IndexType l , IndexType k , IndexType j )const ; /* Returns a pointer to lkj'th row */
+	Type* operator()( IndexType l , IndexType k  )const ; /* Returns a pointer to lk'th 2D subarray */
+	Type* operator()( IndexType l )const; /* Returns a pointer to the l'th 3D subarray */ 
+	Type* operator[]( IndexType l )const ; /* Returns a pointer to the l'th 3D subarray */ 
+	
+	Type* get_ptr(){ return ptr; } ;
+	Type* get_ptr()const{ return ptr; }  ;
+	
+	/* Copy to numpy methods */
+	py::array_t<Type, py::array::c_style> move_py	();
+	py::array_t<Type, py::array::c_style> move_py	(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i);
+	py::array_t<Type, py::array::c_style> copy_py	();
+	py::array_t<Type, py::array::c_style> copy_py	(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i);
+	py::array_t<Type, py::array::c_style> share_py	();
+	py::array_t<Type, py::array::c_style> share_py	(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i);
+	py::array_t<Type, py::array::c_style> affect_py	();
+	py::array_t<Type, py::array::c_style> affect_py	(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i);
+	
+	IndexType 	get_n_l()			{return n_l;};
+	IndexType 	get_n_k()			{return n_k;};
+	IndexType 	get_n_j()			{return n_j;};
+	IndexType 	get_n_i()			{return n_i;};
+	IndexType 	get_n_l()const		{return n_l;};
+	IndexType 	get_n_k()const		{return n_k;};
+	IndexType 	get_n_j()const		{return n_j;};
+	IndexType 	get_n_i()const		{return n_i;};
+
+	size_t 		get_stride_l()		{return stride_l;};
+	size_t 		get_stride_k()		{return stride_k;};
+	size_t 		get_stride_j()		{return stride_j;};
+	size_t 		get_stride_i()		{return stride_i;};
+	size_t 		get_stride_l()const	{return stride_l;};
+	size_t		get_stride_k()const	{return stride_k;};
+	size_t 		get_stride_j()const	{return stride_j;};
+	size_t 		get_stride_i()const	{return stride_i;};
+	
+	uint64_t get_alloc_memory_size(){return n_k*n_j*n_i*sizeof(Type);};
+	
+	private :
+	void* (*alloc_func)(size_t size) ;
+	void  (*free_func) (void* ptr) ;
+	
+	Type* 		ptr ;
+	IndexType 	n_l ; 
+	IndexType 	n_k ; 
+	IndexType 	n_j ;
+	IndexType 	n_i ;
+	size_t 		stride_l ;
+	size_t 		stride_k ;
+	size_t		stride_j ;
+	size_t 		stride_i ;
+    
+    char* displace( IndexType n_Bytes );
+	char* displace( IndexType n_Bytes ) const;
+	
+	void _free_func();
+};
 
 #include "../src/Multi_array.tpp"
+
+typedef Multi_array<int			,1,uint> int_1D 		;
+typedef Multi_array<int8_t		,1,uint> int8_t_1D 		;
+typedef Multi_array<int16_t		,1,uint> int16_t_1D 	;
+typedef Multi_array<int32_t		,1,uint> int32_t_1D 	;
+typedef Multi_array<int64_t		,1,uint> int64_t_1D		;
+typedef Multi_array<uint		,1,uint> uint_1D 		;
+typedef Multi_array<uint8_t		,1,uint> uint8_t_1D 	;
+typedef Multi_array<uint16_t	,1,uint> uint16_t_1D 	;
+typedef Multi_array<uint32_t	,1,uint> uint32_t_1D 	;
+typedef Multi_array<uint64_t	,1,uint> uint64_t_1D 	;
+typedef Multi_array<float		,1,uint> float_1D	 	;
+typedef Multi_array<double		,1,uint> double_1D 		;
+typedef Multi_array<complex_f	,1,uint> complex_f_1D 	;
+typedef Multi_array<complex_d	,1,uint> complex_d_1D 	;
+typedef Multi_array<double		,1,uint> double_1D 		;
+typedef Multi_array<complex_d	,1,uint> complex_d_1D 	;
+
+typedef Multi_array<int			,2,uint> int_2D 		;
+typedef Multi_array<int8_t		,2,uint> int8_t_2D 		;
+typedef Multi_array<int16_t		,2,uint> int16_t_2D 	;
+typedef Multi_array<int32_t		,2,uint> int32_t_2D 	;
+typedef Multi_array<int64_t		,2,uint> int64_t_2D		;
+typedef Multi_array<uint		,2,uint> uint_2D		;
+typedef Multi_array<uint8_t		,2,uint> uint8_t_2D 	;
+typedef Multi_array<uint16_t	,2,uint> uint16_t_2D 	;
+typedef Multi_array<uint32_t	,2,uint> uint32_t_2D 	;
+typedef Multi_array<uint64_t	,2,uint> uint64_t_2D 	;
+typedef Multi_array<float		,2,uint> float_2D 		;
+typedef Multi_array<double		,2,uint> double_2D 		;
+typedef Multi_array<complex_f	,2,uint> complex_f_2D 	;
+typedef Multi_array<complex_d	,2,uint> complex_d_2D 	;
+typedef Multi_array<double		,2,uint> double_2D 		;
+typedef Multi_array<complex_d	,2,uint> complex_d_2D 	;

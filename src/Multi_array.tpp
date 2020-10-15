@@ -753,7 +753,7 @@ Multi_array<Type,3,IndexType> Multi_array<Type,3,IndexType>::numpy( py::array_t<
 template<class Type, class IndexType>
 Multi_array<Type,3,IndexType>::Multi_array( Multi_array& Mom )
 :
-	alloc_func(Mom.alloc_func), /* No memory manegement allowed */
+	alloc_func(Mom.alloc_func), 
 	free_func(Mom.free_func),
 	ptr( (Type*)alloc_func(Mom.n_k*Mom.stride_k) ),
 	n_k(Mom.n_k) , n_j(Mom.n_j) , n_i(Mom.n_i),
@@ -763,7 +763,7 @@ Multi_array<Type,3,IndexType>::Multi_array( Multi_array& Mom )
 template<class Type, class IndexType>
 Multi_array<Type,3,IndexType>::Multi_array(const Multi_array& Mom)
 :
-	alloc_func(Mom.alloc_func), /* No memory manegement allowed */
+	alloc_func(Mom.alloc_func),
 	free_func(Mom.free_func),
 	ptr( (Type*)alloc_func(Mom.n_k*Mom.stride_k) ),
 	n_k(Mom.n_k) , n_j(Mom.n_j) , n_i(Mom.n_i),
@@ -774,7 +774,7 @@ Multi_array<Type,3,IndexType>::Multi_array(const Multi_array& Mom)
 template<class Type, class IndexType>
 Multi_array<Type,3,IndexType>::Multi_array( Multi_array&& Mom )
 :
-alloc_func( Mom.alloc_func ), /* Son, you're now responsible of my memory */
+alloc_func( Mom.alloc_func ), 
 free_func( Mom.free_func ),
 ptr( Mom.ptr ),
 n_k( Mom.n_k ),
@@ -866,7 +866,7 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,3,IndexType>::copy_py()
 {
 	size_t num_bytes = n_k*stride_k ; 
-	Type* destination = (Type*)alloc_func(n_j*stride_j) ;
+	Type* destination = (Type*)alloc_func(n_k*stride_k) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
 	py::capsule free_when_done( destination, free_func );
@@ -884,7 +884,7 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,3,IndexType>::copy_py(IndexType n_k,IndexType n_j,IndexType n_i)
 {
 	size_t num_bytes = n_k*stride_k ; 
-	Type* destination = (Type*)alloc_func(n_j*stride_j) ;
+	Type* destination = (Type*)alloc_func(n_k*stride_k) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
 	py::capsule free_when_done( destination, free_func );
@@ -1022,4 +1022,391 @@ inline Type* Multi_array<Type,3,IndexType>::operator[]( IndexType k ) const
 };
 ////
 
+////////////////////////////////////
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array
+( 
+	IndexType n_l ,
+	IndexType n_k ,
+	IndexType n_j , 
+	IndexType n_i , 
+	void* (*alloc_func)(size_t size) , 
+	void  (*free_func) (void* ptr)
+)
+: 
+	alloc_func(alloc_func) , 
+	free_func(free_func) , 
+	ptr( (Type*)alloc_func( n_l*n_k*n_j*n_i*sizeof(Type)) ),
+	n_l(n_l) , n_k(n_k) , 
+	n_j(n_j) , n_i(n_i),
+	stride_l(n_k*n_j*n_i*sizeof(Type)) 	, stride_k(n_j*n_i*sizeof(Type)) , 
+	stride_j(n_i*sizeof(Type)) 			, stride_i(sizeof(Type))
+{};
+
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array
+( 
+	IndexType 	n_l ,
+	IndexType 	n_k ,
+	IndexType 	n_j ,
+	IndexType 	n_i ,
+	size_t 		stride_l ,
+	size_t 		stride_k ,
+	size_t 		stride_j ,
+	size_t 		stride_i ,
+	void* (*alloc_func)(size_t size) ,
+	void  (*free_func) (void* ptr)
+)
+: 
+	alloc_func(alloc_func) , 
+	free_func(free_func) , 
+	ptr( (Type*)alloc_func(n_l*stride_l) ),
+	n_l(n_l) , n_k(n_k) , 
+	n_j(n_j) , n_i(n_i),
+	stride_l(stride_l) , stride_k(stride_k) , 
+	stride_j(stride_j) , stride_i(stride_i)
+{};
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array( Type* ptr , IndexType n_l , IndexType n_k , IndexType n_j , IndexType n_i )
+:
+	alloc_func(NULL),
+	free_func(NULL),
+	ptr(ptr),
+	n_l(n_l) , n_k(n_k) , 
+	n_j(n_j) , n_i(n_i),
+	stride_l(n_k*n_j*n_i*sizeof(Type)) 	, stride_k(n_j*n_i*sizeof(Type)) , 
+	stride_j(n_i*sizeof(Type)) 			, stride_i(sizeof(Type))
+{};
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array
+(
+	Type* 		ptr ,
+	IndexType 	n_l ,
+	IndexType 	n_k ,
+	IndexType 	n_j ,
+	IndexType	n_i ,
+	size_t 		stride_l , 
+	size_t 		stride_k , 
+	size_t 		stride_j ,
+	size_t 		stride_i 
+)
+:
+	alloc_func(NULL),
+	free_func(NULL),
+	ptr(ptr),
+	n_l(n_l) , n_k(n_k) , 
+	n_j(n_j) , n_i(n_i),
+	stride_l(stride_l) , stride_k(stride_k) , 
+	stride_j(stride_j) , stride_i(stride_i)
+{};
+
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType> Multi_array<Type,4,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
+{
+	py::buffer_info buffer = np_array.request() ;
+	
+	if (buffer.ndim != 4) 
+    {
+		throw std::runtime_error("Number of dimensions must be two");
+	}
+	
+	return Multi_array<Type,4,IndexType>
+	( 	
+		(Type*)buffer.ptr , 
+		buffer.shape[0] 	, buffer.shape[1]	, buffer.shape[2] 	, buffer.shape[3] ,
+		buffer.strides[0] 	, buffer.strides[1]	, buffer.strides[2]	, buffer.strides[3]
+	);
+};
+
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array( Multi_array& Mom )
+:
+	alloc_func(Mom.alloc_func), 
+	free_func(Mom.free_func),
+	ptr( (Type*)alloc_func(Mom.n_k*Mom.stride_k) ),
+	n_k(Mom.n_l) , n_k(Mom.n_l) , 
+	n_j(Mom.n_j) , n_i(Mom.n_i),
+	stride_l(Mom.stride_l) , stride_k(Mom.stride_k) , 
+	stride_j(Mom.stride_j) , stride_i(Mom.stride_i)
+{};
+	
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array(const Multi_array& Mom)
+:
+	alloc_func(Mom.alloc_func),
+	free_func(Mom.free_func),
+	ptr( (Type*)alloc_func(Mom.n_k*Mom.stride_k) ),
+	n_l(Mom.n_l) , n_k(Mom.n_k) , 
+	n_j(Mom.n_j) , n_i(Mom.n_i),
+	stride_l(Mom.stride_l) , stride_k(Mom.stride_k) , 
+	stride_j(Mom.stride_j) , stride_i(Mom.stride_i)
+{};
+
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::Multi_array( Multi_array&& Mom )
+:
+alloc_func( Mom.alloc_func ), 
+free_func( Mom.free_func ),
+ptr( Mom.ptr ),
+n_l( Mom.n_l ),
+n_k( Mom.n_k ),
+n_j( Mom.n_j ),
+n_i( Mom.n_i ),
+stride_l( Mom.stride_l ),
+stride_k( Mom.stride_k ),
+stride_j( Mom.stride_j ),
+stride_i( Mom.stride_i )
+{
+	Mom.alloc_func = NULL ; 
+	Mom.free_func = NULL ;
+	Mom.ptr = NULL ; 
+	Mom.n_l = 0 ; 
+	Mom.n_k = 0 ; 
+	Mom.n_j = 0 ; 
+	Mom.n_i = 0 ; 
+	Mom.stride_l = 0 ; 
+	Mom.stride_k = 0 ; 
+	Mom.stride_j = 0 ; 
+	Mom.stride_i = 0 ; 
+};
+
+// Destructor
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType>::~Multi_array()
+{
+	_free_func();
+};
+
+template<class Type, class IndexType>
+void Multi_array<Type,4,IndexType>::_free_func()
+{
+	if ( (free_func!=NULL) and (ptr!=NULL) )
+	{ free_func(ptr) ; }
+	ptr = NULL ;
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::move_py()
+{
+	py::capsule free_when_done( ptr, free_func );
+	py::array_t<Type, py::array::c_style> out
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i},   
+		ptr,     	
+		free_when_done 
+	);
+	
+	alloc_func = NULL ; 
+	free_func = NULL ;
+	ptr = NULL ; 
+	n_l = 0 ; 
+	n_k = 0 ; 
+	n_j = 0 ; 
+	n_i = 0 ; 
+	stride_l = 0 ; 
+	stride_k = 0 ; 
+	stride_j = 0 ; 
+	stride_i = 0 ; 
+	
+	return out ;
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::move_py(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i)
+{
+	py::capsule free_when_done( ptr, free_func );
+	py::array_t<Type, py::array::c_style> out
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i},   
+		ptr,     	
+		free_when_done 
+	);
+	
+	alloc_func = NULL ; 
+	free_func = NULL ;
+	ptr = NULL ; 
+	this->n_l = 0 ; 
+	this->n_k = 0 ; 
+	this->n_j = 0 ; 
+	this->n_i = 0 ; 
+	stride_l = 0 ;
+	stride_k = 0 ; 
+	stride_j = 0 ; 
+	stride_i = 0 ; 
+	
+	return out ;
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::copy_py()
+{
+	size_t num_bytes = n_l*stride_l ; 
+	Type* destination = (Type*)alloc_func(n_l*stride_l) ;
+	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
+	
+	py::capsule free_when_done( destination, free_func );
+	
+	return py::array_t<Type, py::array::c_style>
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i},     
+		destination,     
+		free_when_done 
+	);
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::copy_py(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i)
+{
+	size_t num_bytes = n_l*stride_l ; 
+	Type* destination = (Type*)alloc_func(n_l*stride_l) ;
+	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
+	
+	py::capsule free_when_done( destination, free_func );
+	
+	return py::array_t<Type, py::array::c_style>
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i},     
+		destination,     
+		free_when_done 
+	);
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::share_py()
+{
+	py::capsule free_dummy(	ptr, [](void *f){;} ); 
+	
+	return py::array_t<Type, py::array::c_style>
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i},  
+		ptr,     	
+		free_dummy 
+	);
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::share_py(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i)
+{
+	py::capsule free_dummy(	ptr, [](void *f){;} ); 
+	
+	return py::array_t<Type, py::array::c_style>
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i},  
+		ptr,     	
+		free_dummy 
+	);
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::affect_py()
+{
+	py::capsule free_when_done( ptr, free_func );
+	
+	alloc_func = NULL ; 
+	free_func = NULL ;
+	
+	return py::array_t<Type, py::array::c_style>
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i}, 
+		ptr,   
+		free_when_done
+	);
+};
+
+template<class Type, class IndexType>
+py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::affect_py(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i)
+{
+	py::capsule free_when_done( ptr, free_func );
+	
+	alloc_func = NULL ; 
+	free_func = NULL ;
+	
+	return py::array_t<Type, py::array::c_style>
+	(
+		{n_l,n_k,n_j,n_i},      
+		{stride_l,stride_k,stride_j,stride_i}, 
+		ptr,   
+		free_when_done
+	);
+};
+
+template<class Type, class IndexType>
+inline char* Multi_array<Type,4,IndexType>::displace( IndexType n_Bytes )
+{
+	return ((char*)ptr) + n_Bytes ;
+};
+
+template<class Type, class IndexType>
+inline char* Multi_array<Type,4,IndexType>::displace( IndexType n_Bytes ) const
+{
+	return ((char*)ptr) + n_Bytes ;
+};
+	
+template<class Type, class IndexType>
+inline Type& Multi_array<Type,4,IndexType>::operator ()( IndexType l ,IndexType k , IndexType j , IndexType i )
+{
+	return *( (Type*)displace( l*stride_l+stride_k*k+stride_j*j+stride_i*i ) ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator()( IndexType l ,IndexType k , IndexType j )
+{
+	return (Type*)displace( l*stride_l+stride_k*k+stride_j*j ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator()( IndexType l ,IndexType k )
+{
+	return (Type*)displace( l*stride_l+stride_k*k ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator()( IndexType l )
+{
+	return (Type*)displace( stride_l*l ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator[]( IndexType l )
+{
+	return (Type*)displace( stride_l*l ) ;
+};
+
+template<class Type, class IndexType>
+inline Type& Multi_array<Type,4,IndexType>::operator ()( IndexType l ,IndexType k , IndexType j , IndexType i )const
+{
+	return *( (Type*)displace( l*stride_l+stride_k*k+stride_j*j+stride_i*i ) ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator()( IndexType l ,IndexType k , IndexType j )const
+{
+	return (Type*)displace( l*stride_l+stride_k*k+stride_j*j ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator()( IndexType l ,IndexType k )const
+{
+	return (Type*)displace( l*stride_l+stride_k*k ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator()( IndexType l )const
+{
+	return (Type*)displace( stride_l*l ) ;
+};
+
+template<class Type, class IndexType>
+inline Type* Multi_array<Type,4,IndexType>::operator[]( IndexType l )const
+{
+	return (Type*)displace( stride_l*l ) ;
+};
+////
 
