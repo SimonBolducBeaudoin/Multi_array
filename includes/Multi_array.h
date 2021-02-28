@@ -107,8 +107,8 @@ class Multi_array<Type,1,IndexType>
 	Multi_array ( Type* prt, IndexType n_i , size_t stride_i = sizeof(Type) );
 	
 	/* Constructing from a 1D Numpy array */
-    // Shares memory with np_array
-	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_copy	( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_share	( py::array_t<Type,py::array::c_style>& np_array );
 	
 	/* Copy constructor */
 	Multi_array( Multi_array& Mom );  
@@ -179,7 +179,7 @@ class Multi_array<Type,1,IndexType>
 	size_t get_stride_i(){return stride_i;};
 	size_t get_stride_i()const{return stride_i;};
 	
-	uint64_t get_alloc_memory_size(){return n_i*sizeof(Type);}; /*This does not take strides into account...*/
+	uint64_t get_alloc_memory_size(){return n_i*stride_i;}; /*This does not take strides into account...*/
 	
 	// alloc_ptr get_alloc_func(){return alloc_func;};
 	// free_ptr get_free_func(){return free_func};
@@ -219,9 +219,9 @@ class Multi_array<Type,2,IndexType>
 		IndexType n_j , 
 		IndexType n_i , 
 		size_t stride_j , 
-		size_t stride_i = sizeof(Type) ,
+		size_t stride_i ,
 		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, 
-		void (*free_func)(void* ptr) = &_aligned_free
+		void  (*free_func)(void* ptr) = &_aligned_free
 	);
 	
 	/* 	Constructing from an existing pointer with default strides */
@@ -238,11 +238,12 @@ class Multi_array<Type,2,IndexType>
 		IndexType n_j ,
 		IndexType n_i ,
 		size_t stride_j , 
-		size_t stride_i = sizeof(Type) 
+		size_t stride_i 
 	);
 	
 	/* Constructing from a 2D Numpy array */
-	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_copy	( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_share	( py::array_t<Type,py::array::c_style>& np_array );
 	
 	/* Copy constructors */
 	Multi_array( Multi_array& Mom ) ;
@@ -287,7 +288,7 @@ class Multi_array<Type,2,IndexType>
 	size_t get_stride_j()const{return stride_j;};
 	size_t get_stride_i()const{return stride_i;};
 	
-	uint64_t get_alloc_memory_size(){return n_j*n_i*sizeof(Type);};
+	uint64_t get_alloc_memory_size(){return n_j*stride_j;};
 	
 	private :
 	void* (*alloc_func)(size_t size) ;
@@ -325,7 +326,7 @@ class Multi_array<Type,3,IndexType>
 		IndexType 	n_i ,
 		size_t 		stride_k , 
 		size_t 		stride_j , 
-		size_t 		stride_i = sizeof(Type) , 
+		size_t 		stride_i , 
 		void* (*alloc_func)(size_t size) = &_64B_aligned_malloc, 
 		void (*free_func)(void* ptr) = &_aligned_free
 	);
@@ -338,9 +339,11 @@ class Multi_array<Type,3,IndexType>
 		IndexType n_i ,
 		size_t stride_k , 
 		size_t stride_j , 
-		size_t stride_i = sizeof(Type) 
+		size_t stride_i 
 	);
-	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
+	
+	static Multi_array numpy_copy	( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_share	( py::array_t<Type,py::array::c_style>& np_array );
 	
 	Multi_array( Multi_array& Mom);
 	Multi_array(const Multi_array& Mom);
@@ -385,7 +388,7 @@ class Multi_array<Type,3,IndexType>
 	size_t 		get_stride_j()const	{return stride_j;};
 	size_t 		get_stride_i()const	{return stride_i;};
 	
-	uint64_t get_alloc_memory_size(){return n_j*n_i*sizeof(Type);};
+	uint64_t get_alloc_memory_size(){return n_k*stride_k;};
 	
 	private :
 	void* 	(*alloc_func)	(size_t size) ;
@@ -428,7 +431,7 @@ class Multi_array<Type,4,IndexType>
 		size_t 		stride_l , 
 		size_t 		stride_k , 
 		size_t 		stride_j , 
-		size_t 		stride_i = sizeof(Type) ,
+		size_t 		stride_i ,
 		void* (*alloc_func)(size_t size) 	= &_64B_aligned_malloc,
 		void  (*free_func) (void* ptr) 		= &_aligned_free
 	);
@@ -443,10 +446,11 @@ class Multi_array<Type,4,IndexType>
 		size_t 		stride_l ,
 		size_t 		stride_k ,
 		size_t 		stride_j , 
-		size_t 		stride_i = sizeof(Type) 
+		size_t 		stride_i
 	);
 	
-	static Multi_array numpy( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_copy	( py::array_t<Type,py::array::c_style>& np_array );
+	static Multi_array numpy_share	( py::array_t<Type,py::array::c_style>& np_array );
 	
 	Multi_array( Multi_array& Mom);
 	Multi_array(const Multi_array& Mom);
@@ -499,7 +503,7 @@ class Multi_array<Type,4,IndexType>
 	size_t 		get_stride_j()const	{return stride_j;};
 	size_t 		get_stride_i()const	{return stride_i;};
 	
-	uint64_t get_alloc_memory_size(){return n_k*n_j*n_i*sizeof(Type);};
+	uint64_t get_alloc_memory_size(){return n_l*stride_l;};
 	
 	private :
 	void* (*alloc_func)(size_t size) ;

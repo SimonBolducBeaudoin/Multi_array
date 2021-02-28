@@ -69,7 +69,26 @@ Multi_array<Type,1,IndexType>::Multi_array( Type* ptr , IndexType n_i , size_t s
 {};
 
 template<class Type, class IndexType>
-Multi_array<Type,1,IndexType> Multi_array<Type,1,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
+Multi_array<Type,1,IndexType> Multi_array<Type,1,IndexType>::numpy_copy( py::array_t<Type, py::array::c_style>& np_array )
+{
+	py::buffer_info buffer = np_array.request() ;
+	
+	if (buffer.ndim != 1) 
+    {
+		throw std::runtime_error("Number of dimensions must be one");
+	}
+	
+	Multi_array<Type,1,IndexType> New_array( buffer.shape[0] , buffer.strides[0] );
+	
+	size_t num_bytes = buffer.shape[0]*buffer.strides[0];
+	
+	memcpy ( (void*)New_array.get_ptr(), (void*)buffer.ptr, num_bytes ) ;
+	
+	return New_array;
+};
+
+template<class Type, class IndexType>
+Multi_array<Type,1,IndexType> Multi_array<Type,1,IndexType>::numpy_share( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	
@@ -182,12 +201,13 @@ py::array_t<Type, py::array::c_style> Multi_array<Type,1,IndexType>::copy_py()
 {
 	/* copy the data */
 	size_t num_bytes = n_i*stride_i ; 
-	Type* destination = (Type*)alloc_func(n_i*stride_i) ;
+	Type* destination = (Type*)malloc(n_i*stride_i) ;
+    
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
 	/* Python responsabilites */
-	py::capsule free_when_done( destination, free_func );
-	
+	py::capsule free_when_done( destination, free );
+    
 	return py::array_t<Type, py::array::c_style>
 	(
 		{n_i},      // shape
@@ -202,11 +222,11 @@ py::array_t<Type, py::array::c_style> Multi_array<Type,1,IndexType>::copy_py(Ind
 {
 	/* copy the data */
 	size_t num_bytes = n_i*stride_i ; 
-	Type* destination = (Type*)alloc_func(n_i*stride_i) ;
+	Type* destination = (Type*)malloc(n_i*stride_i) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
 	/* Python responsabilites */
-	py::capsule free_when_done( destination, free_func );
+	py::capsule free_when_done( destination, free );
 	
 	return py::array_t<Type, py::array::c_style>
 	(
@@ -396,8 +416,28 @@ Multi_array<Type,2,IndexType>::Multi_array
 	stride_j(stride_j) , stride_i(stride_i)
 {};
 /* Constructing from a 2D Numpy array */
+
 template<class Type, class IndexType>
-Multi_array<Type,2,IndexType> Multi_array<Type,2,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
+Multi_array<Type,2,IndexType> Multi_array<Type,2,IndexType>::numpy_copy( py::array_t<Type, py::array::c_style>& np_array )
+{
+	py::buffer_info buffer = np_array.request() ;
+	
+	if (buffer.ndim != 2) 
+    {
+		throw std::runtime_error("Number of dimensions must be one");
+	}
+	
+	Multi_array<Type,2,IndexType> New_array( buffer.shape[0] , buffer.shape[1] , buffer.strides[0] , buffer.strides[1] );
+	
+	size_t num_bytes = buffer.shape[0]*buffer.strides[0];
+	
+	memcpy ( (void*)New_array.get_ptr(), (void*)buffer.ptr, num_bytes ) ;
+	
+	return New_array;
+};
+
+template<class Type, class IndexType>
+Multi_array<Type,2,IndexType> Multi_array<Type,2,IndexType>::numpy_share( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	
@@ -517,10 +557,10 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,2,IndexType>::copy_py()
 {
 	size_t num_bytes = n_j*stride_j ; 
-	Type* destination = (Type*)alloc_func(n_j*stride_j) ;
+	Type* destination = (Type*)malloc(n_j*stride_j) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
-	py::capsule free_when_done( destination, free_func );
+	py::capsule free_when_done( destination, free );
 	
 	return py::array_t<Type, py::array::c_style>
 	(
@@ -535,10 +575,10 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,2,IndexType>::copy_py(IndexType n_j,IndexType n_i)
 {
 	size_t num_bytes = n_j*stride_j ; 
-	Type* destination = (Type*)alloc_func(n_j*stride_j) ;
+	Type* destination = (Type*)malloc(n_j*stride_j) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
-	py::capsule free_when_done( destination, free_func );
+	py::capsule free_when_done( destination, free );
 	
 	return py::array_t<Type, py::array::c_style>
 	(
@@ -732,7 +772,30 @@ Multi_array<Type,3,IndexType>::Multi_array
 {};
 
 template<class Type, class IndexType>
-Multi_array<Type,3,IndexType> Multi_array<Type,3,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
+Multi_array<Type,3,IndexType> Multi_array<Type,3,IndexType>::numpy_copy( py::array_t<Type, py::array::c_style>& np_array )
+{
+	py::buffer_info buffer = np_array.request() ;
+	
+	if (buffer.ndim != 3) 
+    {
+		throw std::runtime_error("Number of dimensions must be one");
+	}
+	
+	Multi_array<Type,3,IndexType> New_array
+		( 
+			buffer.shape[0] , buffer.shape[1], buffer.shape[2] ,
+			buffer.strides[0] , buffer.strides[1], buffer.strides[2] 
+		);
+	
+	size_t num_bytes = buffer.shape[0]*buffer.strides[0];
+	
+	memcpy ( (void*)New_array.get_ptr(), (void*)buffer.ptr, num_bytes ) ;
+	
+	return New_array;
+};
+
+template<class Type, class IndexType>
+Multi_array<Type,3,IndexType> Multi_array<Type,3,IndexType>::numpy_share( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	
@@ -866,11 +929,10 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,3,IndexType>::copy_py()
 {
 	size_t num_bytes = n_k*stride_k ; 
-	Type* destination = (Type*)alloc_func(n_k*stride_k) ;
+	Type* destination = (Type*)malloc(n_k*stride_k) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
-	
-	py::capsule free_when_done( destination, free_func );
-	
+	py::capsule free_when_done( destination, free );
+    
 	return py::array_t<Type, py::array::c_style>
 	(
 		{n_k,n_j,n_i},      
@@ -884,10 +946,10 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,3,IndexType>::copy_py(IndexType n_k,IndexType n_j,IndexType n_i)
 {
 	size_t num_bytes = n_k*stride_k ; 
-	Type* destination = (Type*)alloc_func(n_k*stride_k) ;
+	Type* destination = (Type*)malloc(n_k*stride_k) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
-	py::capsule free_when_done( destination, free_func );
+	py::capsule free_when_done( destination, free );
 	
 	return py::array_t<Type, py::array::c_style>
 	(
@@ -1101,7 +1163,30 @@ Multi_array<Type,4,IndexType>::Multi_array
 {};
 
 template<class Type, class IndexType>
-Multi_array<Type,4,IndexType> Multi_array<Type,4,IndexType>::numpy( py::array_t<Type, py::array::c_style>& np_array )
+Multi_array<Type,4,IndexType> Multi_array<Type,4,IndexType>::numpy_copy( py::array_t<Type, py::array::c_style>& np_array )
+{
+	py::buffer_info buffer = np_array.request() ;
+	
+	if (buffer.ndim != 4) 
+    {
+		throw std::runtime_error("Number of dimensions must be one");
+	}
+	
+	Multi_array<Type,4,IndexType> New_array
+		( 
+			buffer.shape[0] 	, buffer.shape[1]	, buffer.shape[2] 	, buffer.shape[3] ,
+			buffer.strides[0] 	, buffer.strides[1]	, buffer.strides[2]	, buffer.strides[3]
+		);
+	
+	size_t num_bytes = buffer.shape[0]*buffer.strides[0];
+	
+	memcpy ( (void*)New_array.get_ptr(), (void*)buffer.ptr, num_bytes ) ;
+	
+	return New_array;
+};
+
+template<class Type, class IndexType>
+Multi_array<Type,4,IndexType> Multi_array<Type,4,IndexType>::numpy_share( py::array_t<Type, py::array::c_style>& np_array )
 {
 	py::buffer_info buffer = np_array.request() ;
 	
@@ -1243,10 +1328,10 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::copy_py()
 {
 	size_t num_bytes = n_l*stride_l ; 
-	Type* destination = (Type*)alloc_func(n_l*stride_l) ;
+	Type* destination = (Type*)malloc(n_l*stride_l) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
-	py::capsule free_when_done( destination, free_func );
+	py::capsule free_when_done( destination, free );
 	
 	return py::array_t<Type, py::array::c_style>
 	(
@@ -1261,10 +1346,10 @@ template<class Type, class IndexType>
 py::array_t<Type, py::array::c_style> Multi_array<Type,4,IndexType>::copy_py(IndexType n_l,IndexType n_k,IndexType n_j,IndexType n_i)
 {
 	size_t num_bytes = n_l*stride_l ; 
-	Type* destination = (Type*)alloc_func(n_l*stride_l) ;
+	Type* destination = (Type*)malloc(n_l*stride_l) ;
 	memcpy ( (void*)destination, (void*)get_ptr(), num_bytes ) ;
 	
-	py::capsule free_when_done( destination, free_func );
+	py::capsule free_when_done( destination, free );
 	
 	return py::array_t<Type, py::array::c_style>
 	(
