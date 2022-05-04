@@ -8,12 +8,11 @@ OMP_EXTRA = ../Omp_extra
 INTERPOLATION = ../Interpolation
 LIBS = ../libs
 
-IDIR = includes
 ODIR = obj
 LDIR = lib
 SDIR = src
 
-EXTERNAL_INCLUDES = -I$(MULTI_ARRAY)/$(IDIR)
+EXTERNAL_INCLUDES = -I$(MULTI_ARRAY)/$(SDIR)
 
 SRC  = $(wildcard $(SDIR)/*.cpp)
 OBJ  = $(patsubst $(SDIR)/%.cpp,$(ODIR)/%.o,$(SRC))
