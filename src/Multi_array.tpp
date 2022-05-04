@@ -1,12 +1,12 @@
 #pragma once
 
 template <size_t alignment= 64>
-void* _64B_aligned_malloc( size_t size )
+void* _64B_aligned_alloc( size_t size )
 {
 	void    *ptr;
     // size_t  alignment = 64 ;
 	
-	ptr = _aligned_malloc(size, alignment);
+	ptr = aligned_alloc(alignment,size);
     if (ptr == NULL) {throw std::runtime_error("Error allocation aligned memory.");}
 	
 	return ptr ;
