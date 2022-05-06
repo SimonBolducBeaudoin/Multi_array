@@ -1,17 +1,5 @@
 #pragma once
 
-template <size_t alignment= 64>
-void* _64B_aligned_alloc( size_t size )
-{
-	void    *ptr;
-    // size_t  alignment = 64 ;
-	
-	ptr = aligned_alloc(alignment,size);
-    if (ptr == NULL) {throw std::runtime_error("Error allocation aligned memory.");}
-	
-	return ptr ;
-};
-
 /* Default constructor */
 template<class Type , class IndexType>
 Multi_array<Type,1,IndexType>::Multi_array()

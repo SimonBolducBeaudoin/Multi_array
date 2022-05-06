@@ -1,5 +1,4 @@
 #pragma once
-#include<stdlib.h>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>
@@ -14,11 +13,6 @@ typedef unsigned int uint ;
 /*Function pointer types*/
 // typedef void* (*alloc_ptr)(size_t size);
 // typedef void (*free_ptr)(size_t size);
-
-// see : https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/aligned-malloc?view=vs-2019
-// https://stackoverflow.com/questions/44659924/returning-numpy-arrays-via-pybind11
-template <size_t alignment= 64>
-void* _64B_aligned_alloc( size_t size );
 
 /////// IDEA
 	// Add a macro that can be turned on and off that checks if called indexes are out of bounds.
@@ -90,7 +84,7 @@ class Multi_array<Type,1,IndexType>
 	Multi_array 
 	(
 		IndexType n_i , // Number of elements in i
-		void* (*alloc_func)(size_t size) = &_64B_aligned_alloc, // Custom allocation function 
+		void* (*alloc_func)(size_t size) = &malloc, // Custom allocation function 
 		void (*free_func)(void* ptr) = &free
 	);
 	
@@ -99,7 +93,7 @@ class Multi_array<Type,1,IndexType>
 	(
 		IndexType n_i , // Number of elements in i
 		size_t stride_i , // The number of Bytes of one element 
-		void* (*alloc_func)(size_t size) = &_64B_aligned_alloc, // Custom allocation function 
+		void* (*alloc_func)(size_t size) = &malloc, // Custom allocation function 
 		void (*free_func)(void* ptr) = &free
 	);
 	
@@ -210,7 +204,7 @@ class Multi_array<Type,2,IndexType>
 	( 
 		IndexType n_j , 
 		IndexType n_i , 
-		void* (*alloc_func)(size_t size) = &_64B_aligned_alloc,
+		void* (*alloc_func)(size_t size) = &malloc,
 		void (*free_func)(void* ptr) = &free
 	);
 	/* declaring strides */
@@ -220,7 +214,7 @@ class Multi_array<Type,2,IndexType>
 		IndexType n_i , 
 		size_t stride_j , 
 		size_t stride_i ,
-		void* (*alloc_func)(size_t size) = &_64B_aligned_alloc, 
+		void* (*alloc_func)(size_t size) = &malloc, 
 		void  (*free_func)(void* ptr) = &free
 	);
 	
@@ -316,7 +310,7 @@ class Multi_array<Type,3,IndexType>
 		IndexType n_k , 
 		IndexType n_j , 
 		IndexType n_i , 
-		void* (*alloc_func)(size_t size) = &_64B_aligned_alloc,
+		void* (*alloc_func)(size_t size) = &malloc,
 		void (*free_func)(void* ptr) = &free
 	);
 	Multi_array
@@ -327,7 +321,7 @@ class Multi_array<Type,3,IndexType>
 		size_t 		stride_k , 
 		size_t 		stride_j , 
 		size_t 		stride_i , 
-		void* (*alloc_func)(size_t size) = &_64B_aligned_alloc, 
+		void* (*alloc_func)(size_t size) = &malloc, 
 		void (*free_func)(void* ptr) = &free
 	);
 	Multi_array ( Type* prt, IndexType n_k , IndexType n_j , IndexType n_i );
@@ -419,7 +413,7 @@ class Multi_array<Type,4,IndexType>
 		IndexType n_k , 
 		IndexType n_j , 
 		IndexType n_i , 
-		void* 	(*alloc_func)	(size_t size)	= &_64B_aligned_alloc,
+		void* 	(*alloc_func)	(size_t size)	= &malloc,
 		void 	(*free_func)	(void* ptr)		= &free
 	);
 	Multi_array
@@ -432,7 +426,7 @@ class Multi_array<Type,4,IndexType>
 		size_t 		stride_k , 
 		size_t 		stride_j , 
 		size_t 		stride_i ,
-		void* (*alloc_func)(size_t size) 	= &_64B_aligned_alloc,
+		void* (*alloc_func)(size_t size) 	= &malloc,
 		void  (*free_func) (void* ptr) 		= &free
 	);
 	Multi_array ( Type* prt, IndexType n_l , IndexType n_k , IndexType n_j , IndexType n_i );
@@ -525,7 +519,7 @@ class Multi_array<Type,4,IndexType>
 	void _free_func();
 };
 
-#include "../src/Multi_array.tpp"
+#include "Multi_array.tpp"
 
 typedef Multi_array<int			,1,uint> int_1D 		;
 typedef Multi_array<int8_t		,1,uint> int8_t_1D 		;
