@@ -33,7 +33,7 @@ Multi_array is a custom class for runtime allocation of fixed size multidimentio
 	- Memory will be aligned be default : 
 		- Using 128 bits (aka 16 bytes) alignement
 			- allocation function by default is aligned_alloc
-			- free function bvy default is free
+			- free function by default is free
 			- see : https://embeddedartistry.com/blog/2017/02/22/generating-aligned-memory/
 	- User can give their own allocating and freeing function in constructors
 		- Ex : fftw_malloc fftw_free (for fftw library)
@@ -67,7 +67,7 @@ Multi_array is a custom class for runtime allocation of fixed size multidimentio
 		- By default IndexType is unsigned int (optimal for speed on a given machine) but can be set to any unsigned type by the user.	
 */
 
-template<class Type,uint8_t Dim,class IndexType=uint>
+template<class Type,uint8_t Dim,class IndexType=size_t>
 class Multi_array
 {
 
