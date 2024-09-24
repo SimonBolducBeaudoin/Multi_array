@@ -39,3 +39,4 @@ build/
 
 *.pyd
 __pycache__/
+*.bak
