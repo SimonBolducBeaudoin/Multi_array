@@ -40,3 +40,4 @@ build/
 *.pyd
 __pycache__/
 *.bak
+.clang-format
