@@ -205,7 +205,7 @@ public:
   size_t get_stride_i() { return stride_i; };
   size_t get_stride_i() const { return stride_i; };
 
-  uint64_t get_alloc_memory_size() {
+  uint64_t get_heap_size() {
     return n_i * stride_i;
   }; /*This does not take strides into account...*/
 
@@ -296,7 +296,7 @@ public:
   size_t get_stride_j() const { return stride_j; };
   size_t get_stride_i() const { return stride_i; };
 
-  uint64_t get_alloc_memory_size() { return n_j * stride_j; };
+  uint64_t get_heap_size() { return n_j * stride_j; };
 
 private:
   void *(*alloc_func)(size_t size);
@@ -386,7 +386,7 @@ public:
   size_t get_stride_j() const { return stride_j; };
   size_t get_stride_i() const { return stride_i; };
 
-  uint64_t get_alloc_memory_size() { return n_k * stride_k; };
+  uint64_t get_heap_size() { return n_k * stride_k; };
 
 private:
   void *(*alloc_func)(size_t size);
@@ -491,7 +491,7 @@ public:
   size_t get_stride_j() const { return stride_j; };
   size_t get_stride_i() const { return stride_i; };
 
-  uint64_t get_alloc_memory_size() { return n_l * stride_l; };
+  uint64_t get_heap_size() { return n_l * stride_l; };
 
 private:
   void *(*alloc_func)(size_t size);
